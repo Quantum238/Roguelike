@@ -7,6 +7,7 @@ class Map():
         self.matrix = map_matrix
         self.placeholders = []
         self.messages = []
+        self.character_list = []
         
         # Casts input characters to their respective objects
         for x in range(0,len(self.matrix)):
@@ -60,6 +61,7 @@ class Map():
             print(row_string)
         print("-"*(len(self.matrix[0])+2))
 
+
     # Updates location where player was
     def update_placeholders(self):
          for item in self.placeholders:
@@ -107,7 +109,7 @@ class MapObject():
     def __str__(self):
         return self.icon
 
-    def take_damage(self,attack,map):
+    def take_damage(self,attack,map,attacker):
         return "There is nothing to attack!"
     
 # Subclass of MapObject: space
@@ -122,9 +124,6 @@ class Wall(MapObject):
     def __init__(self,location):
         MapObject.__init__(self,"a wall","#",location)
         self.object_type = "wall"
-
-    def take_damage(self,atk,map):
-        return "The wall is not effected"
 
 # Subclass of MapObject: hazard
 class Hazard(MapObject):
@@ -142,24 +141,54 @@ class Character(MapObject):
         self.beneath = Space(location)
         self.hp = hp
         self.atk = atk
+        self.attacked = False
+        self.attacker = None
 
-    def take_damage(self, atk, Map):
+    def take_damage(self, atk, map, attacker):
         self.hp -= atk
         if(self.hp <= 0):
-            Map.matrix[self.location[0]][self.location[1]] = self.beneath
-            Map.add_message(self.name + " lost " + str(atk) + " hp!\n" + self.name + " has perished!")
+            map.matrix[self.location[0]][self.location[1]] = self.beneath
+            map.add_message(self.name + " lost " + str(atk) + " hp!\n" + self.name + " has perished!")
+            map.character_list.remove(self)
         else:
-            Map.add_message(self.name + " lost " + str(atk) + " hp!")
+            map.add_message(self.name + " lost " + str(atk) + " hp!")
+            self.attacker = attacker
+            self.attacked = True
         
     def print_stats(self):
         print(self.name + " HP: " + str(self.hp))
 
+    def adjacent_squares(self):
+        adjacent = []
+        adjacent.append([self.location[0]-1,self.location[1]])
+        adjacent.append([self.location[0]+1,self.location[1]])
+        adjacent.append([self.location[0],self.location[1]-1])
+        adjacent.append([self.location[0],self.location[1]+2])
+        return adjacent
+
+    def in_range(self,map,target):
+        in_range = False
+        for square in self.adjacent_squares():
+            if target.location == square:
+                in_range = True
+        return in_range
+
+
 # Subclass of MapObject: enemy
 class Enemy(Character):
-    def __init__(self,name,location,hp,atk):
+    def __init__(self,name,location,hp,atk,ai_type):
         Character.__init__(self,name,"$",location,hp,atk)
         self.object_type = "enemy"
-        
+        self.ai_type = ai_type
+
+    def action(self,map):
+        if self.ai_type == "passive":
+            if self.attacked == True:
+                if self.in_range(map,self.attacker):
+                    map.add_message(self.name + " retaliates against " + self.attacker.name)
+                    self.attacker.take_damage(self.atk,map,self)
+            else:
+                map.add_message(self.name + " sits idly by")
         
 # Subclass of character: player character      
 class Player(Character):
@@ -212,8 +241,8 @@ class Player(Character):
             try:
                 target = Map.matrix[target_loc[0]][target_loc[1]]
                 Map.add_message(self.name + " struck " + target.name)
-                target.take_damage(self.atk,Map)
-            except:
+                target.take_damage(self.atk,Map,self)
+            except(IndexError):
                 Map.add_message(self.name + " strikes into the void")
 
         # Resting
@@ -231,8 +260,10 @@ this_map = Map([["#","#"," "," "," "],
 this_player = Player("Hero",[4,1],20,2)
 this_map.place_object(this_player)
 
-this_enemy = Enemy("Baddy",[2,2],6,1)
+this_enemy = Enemy("Baddy",[2,2],6,1,"passive")
 this_map.place_object(this_enemy)
+
+this_map.character_list = [this_player,this_enemy]
 '''
 #For manually adding things
 this_wall = Wall([3,3])
@@ -248,7 +279,8 @@ while(this_player.hp > 0):
     this_player.print_stats()
     this_enemy.print_stats()
     this_map.print_messages()
-    this_player.action(this_map) # Takes player input
+    for character in this_map.character_list:
+        character.action(this_map)
     this_map.place_object(this_player) # Updates spot player moved to
     this_map.environmental_damage()
 print("You lost!")
