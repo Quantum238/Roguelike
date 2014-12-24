@@ -166,29 +166,68 @@ class Character(MapObject):
         adjacent.append([self.location[0],self.location[1]+2])
         return adjacent
 
-    def in_range(self,map,target):
-        in_range = False
+
+    def in_atk_range(self,map,target):
+        in_atk_range = False
         for square in self.adjacent_squares():
             if target.location == square:
-                in_range = True
-        return in_range
+                in_atk_range = True
+        return in_atk_range
 
 
 # Subclass of MapObject: enemy
 class Enemy(Character):
-    def __init__(self,name,location,hp,atk,ai_type):
+    def __init__(self,name,location,hp,atk,ai_type,awareness):
         Character.__init__(self,name,"$",location,hp,atk)
         self.object_type = "enemy"
         self.ai_type = ai_type
+        self.awareness = awareness
+
+    def aware_squares(self):
+        aware = []
+        for x in range(0,self.awareness):
+            for y in range(0,(self.awareness+1-x)):
+
+                aware.append([self.location[0]-x,self.location[1]-y]) # x squares above, y squares left
+                aware.append([self.location[0]-x,self.location[1]+y]) # x squares above, y squares right
+                aware.append([self.location[0]+x,self.location[1]-y]) # x squares below, y squares left
+                aware.append([self.location[0]+x,self.location[1]+y]) # x squares below, y squares right
+                '''
+                print("x up, y left: " + str([self.location[0]-x,self.location[1]-y])) # x squares above, y squares left
+                print("x up, y right: " + str([self.location[0]-x,self.location[1]+y])) # x squares above, y squares right
+                print("x down, y left: " + str([self.location[0]+x,self.location[1]-y])) # x squares below, y squares left
+                print("x down, y right: " + str([self.location[0]+x,self.location[1]+y])) # x squares below, y squares right
+                '''
+
+        for square in aware:
+            # Remove negatives
+            if square[0] < 0 or square[1] < 0:
+                aware.remove(square)
+            # Remove character's own location
+            if square == self.location:
+                aware.remove(square)
+        return aware
+
+    def in_aware_range(self,map,target):
+        in_aware_range = False
+        for square in self.aware_squares():
+            if target.location == square:
+                in_aware_range = True
+                print("In range!")
 
     def action(self,map):
+        # For passive enemies
         if self.ai_type == "passive":
             if self.attacked == True:
-                if self.in_range(map,self.attacker):
+                if self.in_atk_range(map,self.attacker):
                     map.add_message(self.name + " retaliates against " + self.attacker.name)
                     self.attacker.take_damage(self.atk,map,self)
             else:
                 map.add_message(self.name + " sits idly by")
+        
+        # For pursuing enemies
+        if self.ai_type == "persuing":
+            self.in_aware_range(map,map.player())
         
 # Subclass of character: player character      
 class Player(Character):
@@ -260,7 +299,7 @@ this_map = Map([["#","#"," "," "," "],
 this_player = Player("Hero",[4,1],20,2)
 this_map.place_object(this_player)
 
-this_enemy = Enemy("Baddy",[2,2],6,1,"passive")
+this_enemy = Enemy("Baddy",[2,2],6,1,"persuing",3)
 this_map.place_object(this_enemy)
 
 this_map.character_list = [this_player,this_enemy]
