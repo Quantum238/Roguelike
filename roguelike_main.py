@@ -13,15 +13,15 @@ class map_map():
             for y in range(0,len(self.matrix[x])):
                 # Wall
                 if(self.matrix[x][y] == "#"):
-                    print("Wall found at " + str(x) + "," + str(y))
+                    #print("Wall found at " + str(x) + "," + str(y))
                     self.matrix[x][y] = wall([x,y])
                 # Space
                 if(self.matrix[x][y] == " "):
-                    print("Space found at " + str(x) + "," + str(y))
+                    #print("Space found at " + str(x) + "," + str(y))
                     self.matrix[x][y] = space([x,y])
                 #Hazard
                 if(self.matrix[x][y] == "%"):
-                    print("Hazard found at " + str(x) + "," + str(y))
+                    #print("Hazard found at " + str(x) + "," + str(y))
                     self.matrix[x][y] = hazard([x,y],5)
                 
     '''
@@ -33,7 +33,7 @@ class map_map():
     '''
     # Places an object into the map grid, storing the location's previous occupant
     def place_object(self,to_place):
-        self.placeholders.append(self.matrix[to_place.location[0]][to_place.location[1]])                   
+        #self.placeholders.append(self.matrix[to_place.location[0]][to_place.location[1]])                   
         self.matrix[to_place.location[0]][to_place.location[1]] = to_place
         
     # Draws the map
@@ -78,12 +78,13 @@ class map_map():
 
     # Calculates hazard damage
     def environmental_damage(self):
-        for item in self.placeholders:
-            if(item.object_type == "hazard"):
-                if(item.location == self.player().location):
-                    self.add_message("You stepped on a hazard!")
-                    self.add_message("You lost " + str(item.damage) + " hp!")
-                    self.player().hp -= item.damage
+        for row in self.matrix:
+            for item in row:
+                if(item.object_type == "player" or item.object_type == "enemy"):
+                    if(item.beneath.object_type == "hazard"):
+                        self.add_message(item.name + " stepped on a hazard!")
+                        self.add_message(item.name + " lost " + str(item.beneath.damage) + " hp!")
+                        item.hp -= item.beneath.damage
 
     # Adds message to messages array, to print later
     def add_message(self,to_add):
@@ -144,11 +145,16 @@ class character(map_object):
         self.hp -= atk
         return (self.name + " lost " + str(atk) + " hp!")
 
+    def print_stats(self):
+        print(self.name + " HP: " + str(self.hp))
+
 # Subclass of map_object: enemy
 class enemy(character):
     def __init__(self,name,location,hp,atk):
         character.__init__(self,name,"$",location,hp,atk)
         self.object_type = "enemy"
+        self.prev_location = copy.deepcopy(location)
+        self.beneath = space(location)
         
         
 # Subclass of character: player character      
@@ -156,15 +162,18 @@ class player(character):
     def __init__(self,name,location,hp,atk):
         character.__init__(self,name,"@",location,hp,atk)
         self.object_type = "player"
-        self.moved = False
+        self.prev_location = copy.deepcopy(location)
+        self.beneath = space(location)
         
     #Waits for input; updates prev_location and location accordingly
     def action(self,map_map):
-        self.prev_location = copy.deepcopy(self.location)
         user_input = input("")
 
+        map_map.add_message("Beneath: " + str(self.beneath.object_type))
+
         #Movement
-        if(user_input == "a"):d
+        
+        if(user_input == "a"):
             self.location[1] -= 1
             self.icon = "<"
         elif(user_input == "d"):
@@ -176,16 +185,23 @@ class player(character):
         elif(user_input == "s"):
             self.location[0] += 1
             self.icon = "v"
+        
         # Canceling move if going out of bounds
         try:
-            if(map_map.matrix[self.location[1]][self.location[0]]):
+            if(map_map.matrix[self.location[0]][self.location[1]]):
                 pass
         except:
             self.location = copy.deepcopy(self.prev_location)
+
         # Canceling move if contacting something
         if(map_map.matrix[self.location[0]][self.location[1]].passable == False):
             self.location = copy.deepcopy(self.prev_location)
 
+        if(self.prev_location != self.location):
+            map_map.matrix[self.prev_location[0]][self.prev_location[1]] = self.beneath
+            self.beneath = map_map.matrix[self.location[0]][self.location[1]]
+            self.prev_location = copy.deepcopy(self.location)
+            
         # Attacking
         if(user_input == "z"):
             if(self.icon == "<"): target_loc = [self.location[0],self.location[1]-1]
@@ -201,9 +217,6 @@ class player(character):
         # Resting
         if(user_input == "r"):
             pass
-        
-    def print_stats(self):
-        print("HP: " + str(self.hp))
        
 this_map = map_map([["#","#"," "," "," "],
             [" "," "," "," "," "],
@@ -233,7 +246,6 @@ while(this_player.hp > 0):
     this_player.print_stats()
     this_map.print_messages()
     this_player.action(this_map) # Takes player input
-    this_map.update_placeholders() # Updates spot player was in
     this_map.place_object(this_player) # Updates spot player moved to
     this_map.environmental_damage()
 print("You lost!")
