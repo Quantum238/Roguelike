@@ -17,11 +17,11 @@ class Map():
 					# print("Wall found at " + str(x) + "," + str(y))
 					self.matrix[x][y] = Wall([x,y])
 				# Space
-				if(self.matrix[x][y] == " "):
+				elif(self.matrix[x][y] == " "):
 					# print("Space found at " + str(x) + "," + str(y))
 					self.matrix[x][y] = Space([x,y])
 				#Hazard
-				if(self.matrix[x][y] == "%"):
+				elif(self.matrix[x][y] == "%"):
 					# print("Hazard found at " + str(x) + "," + str(y))
 					self.matrix[x][y] = Hazard([x,y],5)
 				
