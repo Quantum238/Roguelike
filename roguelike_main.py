@@ -109,7 +109,7 @@ class MapObject():
 	def __str__(self):
 		return self.icon
 
-	def take_damage(self,attack,map,attacker):
+	def take_damage(self,attack,_map,attacker):
 		return "There is nothing to attack!"
 	
 # Subclass of MapObject: space
@@ -144,19 +144,20 @@ class Character(MapObject):
 		self.attacked = False
 		self.attacker = None
 
-	def take_damage(self, atk, map, attacker):
+	def take_damage(self, atk, _map, attacker):
 		self.hp -= atk
 		if(self.hp <= 0):
-			map.matrix[self.location[0]][self.location[1]] = self.beneath
-			map.add_message(self.name + " lost " + str(atk) + " hp!\n" + self.name + " has perished!")
-			map.character_list.remove(self)
+			_map.matrix[self.location[0]][self.location[1]] = self.beneath
+			_map.add_message(self.name + " lost " + str(atk) + " hp!\n" + self.name + " has perished!")
+			_map.character_list.remove(self)
 		else:
-			map.add_message(self.name + " lost " + str(atk) + " hp!")
+			_map.add_message(self.name + " lost " + str(atk) + " hp!")
 			self.attacker = attacker
 			self.attacked = True
 		
 	def print_stats(self):
-		print(self.name + " HP: " + str(self.hp))
+		# print(self.name + " HP: " + str(self.hp))
+		print ("{} HP: {}".format(self.name, self.hp))
 
 	def adjacent_squares(self):
 		adjacent = []
@@ -181,14 +182,14 @@ class Enemy(Character):
 		self.object_type = "enemy"
 		self.ai_type = ai_type
 
-	def action(self,map):
+	def action(self,_map):
 		if self.ai_type == "passive":
 			if self.attacked == True:
-				if self.in_range(map,self.attacker):
-					map.add_message(self.name + " retaliates against " + self.attacker.name)
-					self.attacker.take_damage(self.atk,map,self)
+				if self.in_range(_map,self.attacker):
+					_map.add_message(self.name + " retaliates against " + self.attacker.name)
+					self.attacker.take_damage(self.atk,_map,self)
 			else:
-				map.add_message(self.name + " sits idly by")
+				_map.add_message(self.name + " sits idly by")
 		
 # Subclass of character: player character      
 class Player(Character):
@@ -197,7 +198,7 @@ class Player(Character):
 		self.object_type = "player"
 		
 	#Waits for input; updates prev_location and location accordingly
-	def action(self,Map):
+	def action(self,_map):
 		user_input = input("")
 
 		#Movement
@@ -217,18 +218,18 @@ class Player(Character):
 		
 		# Canceling move if going out of bounds
 		try:
-			if(Map.matrix[self.location[0]][self.location[1]]):
+			if(_map.matrix[self.location[0]][self.location[1]]):
 				pass
 		except:
 			self.location = copy.deepcopy(self.prev_location)
 
 		# Canceling move if contacting something
-		if(Map.matrix[self.location[0]][self.location[1]].passable == False):
+		if(_map.matrix[self.location[0]][self.location[1]].passable == False):
 			self.location = copy.deepcopy(self.prev_location)
 
 		if(self.prev_location != self.location):
-			Map.matrix[self.prev_location[0]][self.prev_location[1]] = self.beneath
-			self.beneath = Map.matrix[self.location[0]][self.location[1]]
+			_map.matrix[self.prev_location[0]][self.prev_location[1]] = self.beneath
+			self.beneath = _map.matrix[self.location[0]][self.location[1]]
 			self.prev_location = copy.deepcopy(self.location)
 			
 		# Attacking
@@ -239,11 +240,11 @@ class Player(Character):
 			elif(self.icon == "v"): target_loc = [self.location[0]+1,self.location[1]]
 			else: target_loc = None
 			try:
-				target = Map.matrix[target_loc[0]][target_loc[1]]
-				Map.add_message(self.name + " struck " + target.name)
-				target.take_damage(self.atk,Map,self)
+				target = _map.matrix[target_loc[0]][target_loc[1]]
+				_map.add_message(self.name + " struck " + target.name)
+				target.take_damage(self.atk,_map,self)
 			except(IndexError):
-				Map.add_message(self.name + " strikes into the void")
+				_map.add_message(self.name + " strikes into the void")
 
 		# Resting
 		if(user_input == "r"):
