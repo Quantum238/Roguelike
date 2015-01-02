@@ -1,5 +1,6 @@
 import copy
 import os 
+import msvcrt
 		
 # ---- The map itself ---- #
 class Map():
@@ -205,7 +206,8 @@ class Player(Character):
 		
 	#Waits for input; updates prev_location and location accordingly
 	def action(self,_map):
-		user_input = input("")
+		# user_input = input("")
+		user_input = msvcrt.getwch()
 
 		#Movement
 		
