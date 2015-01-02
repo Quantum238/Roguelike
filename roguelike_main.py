@@ -84,8 +84,10 @@ class Map():
 			for item in row:
 				if item.object_type == "player" or item.object_type == "enemy":
 					if item.beneath.object_type == "hazard":
-						self.add_message(item.name + " stepped on a hazard!")
-						self.add_message(item.name + " lost " + str(item.beneath.damage) + " hp!")
+						# self.add_message(item.name + " stepped on a hazard!")
+						self.add_message("{} stepped on a hazard".format(item.name))
+						# self.add_message(item.name + " lost " + str(item.beneath.damage) + " hp!")
+						self.add_message("{} lost {} hp!".format(item.name, item.beneath.damage))
 						item.hp -= item.beneath.damage
 
 	# Adds message to messages array, to print later
@@ -148,10 +150,12 @@ class Character(MapObject):
 		self.hp -= atk
 		if(self.hp <= 0):
 			_map.matrix[self.location[0]][self.location[1]] = self.beneath
-			_map.add_message(self.name + " lost " + str(atk) + " hp!\n" + self.name + " has perished!")
+			# _map.add_message(self.name + " lost " + str(atk) + " hp!\n" + self.name + " has perished!")
+			_map.add_message("{} lost {} hp!\n {} has perished!".format(self.name, atk, self.name))
 			_map.character_list.remove(self)
 		else:
-			_map.add_message(self.name + " lost " + str(atk) + " hp!")
+			# _map.add_message(self.name + " lost " + str(atk) + " hp!")
+			_map.add_message('{} lost {} hp!'.format(self.name, atk))
 			self.attacker = attacker
 			self.attacked = True
 		
@@ -186,10 +190,12 @@ class Enemy(Character):
 		if self.ai_type == "passive":
 			if self.attacked == True:
 				if self.in_range(_map,self.attacker):
-					_map.add_message(self.name + " retaliates against " + self.attacker.name)
+					# _map.add_message(self.name + " retaliates against " + self.attacker.name)
+					_map.add_message("{} retaliates against {}".format(self.name, self.attacker.name))
 					self.attacker.take_damage(self.atk,_map,self)
 			else:
-				_map.add_message(self.name + " sits idly by")
+				# _map.add_message(self.name + " sits idly by")
+				_map.add_message("{} sits idly by".format(self.name))
 		
 # Subclass of character: player character      
 class Player(Character):
@@ -241,10 +247,12 @@ class Player(Character):
 			else: target_loc = None
 			try:
 				target = _map.matrix[target_loc[0]][target_loc[1]]
-				_map.add_message(self.name + " struck " + target.name)
+				# _map.add_message(self.name + " struck " + target.name)
+				_map.add_message("{} struck {}".format(self.name, target.name))
 				target.take_damage(self.atk,_map,self)
 			except(IndexError):
-				_map.add_message(self.name + " strikes into the void")
+				# _map.add_message(self.name + " strikes into the void")
+				_map.add_message("{} strikes into the void".format(self.name))
 
 		# Resting
 		if(user_input == "r"):
