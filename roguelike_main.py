@@ -282,8 +282,9 @@ this_map.place_object(this_wall)
 # A turn
 while(this_player.hp > 0):
 	# Refreshes screen
-	clear = lambda: os.system('cls')
-	clear()
+	# clear = lambda: os.system('cls')
+	# clear()
+	os.system('cls') # clears the screen in command line mode.  Is annoying when run from IDLE
 	this_map.draw()
 	this_player.print_stats()
 	this_enemy.print_stats()
